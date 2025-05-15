@@ -7,7 +7,7 @@ from app.core.users.type_users import AccountType
 from app.types.sqlalchemy import Base
 
 
-class CoreUser(Base):
+class User(Base):
     __tablename__ = "core_user"
 
     id: Mapped[str] = mapped_column(
@@ -16,12 +16,13 @@ class CoreUser(Base):
     )  # Use UUID later
     email: Mapped[str] = mapped_column(unique=True, index=True)
     password_hash: Mapped[str]
+    is_active: Mapped[bool]
     account_type: Mapped[AccountType]
     name: Mapped[str]
     created_on: Mapped[datetime | None]
 
 
-class CoreUserUnconfirmed(Base):
+class UserUnconfirmed(Base):
     __tablename__ = "core_user_unconfirmed"
 
     id: Mapped[str] = mapped_column(primary_key=True)
@@ -35,7 +36,7 @@ class CoreUserUnconfirmed(Base):
     expire_on: Mapped[datetime]
 
 
-class CoreUserRecoverRequest(Base):
+class UserRecoverRequest(Base):
     __tablename__ = "core_user_recover_request"
 
     # The email column should not be unique.
@@ -47,7 +48,7 @@ class CoreUserRecoverRequest(Base):
     expire_on: Mapped[datetime]
 
 
-class CoreUserEmailMigrationCode(Base):
+class UserEmailMigrationCode(Base):
     __tablename__ = "core_user_email_migration_code"
 
     user_id: Mapped[str] = mapped_column(ForeignKey("core_user.id"), primary_key=True)

@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.core_endpoints import cruds_core, models_core
 from app.core.users import cruds_users, models_users
-from app.core.users.models_users import CoreUser
+from app.core.users.models_users import User
 from app.core.utils import security
 from app.types import core_data
 from app.types.content_type import ContentType
@@ -44,9 +44,9 @@ uuid_regex = re.compile(
 
 def sort_user(
     query: str,
-    users: Sequence[models_users.CoreUser],
+    users: Sequence[models_users.User],
     limit: int = 10,
-) -> list[models_users.CoreUser]:
+) -> list[models_users.User]:
     """
     Search for users using Fuzzy String Matching
 
@@ -61,18 +61,10 @@ def sort_user(
         return unicodedata.normalize("NFKD", s).encode("ASCII", "ignore").decode("utf8")
 
     query = unaccent(query)
-    scored: list[tuple[CoreUser, float]] = []
+    scored: list[tuple[User, float]] = []
     for user in users:
-        firstname = unaccent(user.firstname)
         name = unaccent(user.name)
-        nickname = unaccent(user.nickname) if user.nickname else None
-        score = max(
-            jaro_winkler_similarity(query, firstname),
-            jaro_winkler_similarity(query, name),
-            jaro_winkler_similarity(query, f"{firstname} {name}"),
-            jaro_winkler_similarity(query, f"{name} {firstname}"),
-            jaro_winkler_similarity(query, nickname) if nickname else 0,
-        )
+        score = jaro_winkler_similarity(query, name)
         bisect.insort(scored, (user, score), key=(lambda s: s[1]))
         if len(scored) > limit:
             scored.pop(0)
@@ -380,7 +372,7 @@ async def create_and_send_email_migration(
     """
     confirmation_token = security.generate_token()
 
-    migration_object = models_users.CoreUserEmailMigrationCode(
+    migration_object = models_users.UserEmailMigrationCode(
         user_id=user_id,
         new_email=new_email,
         old_email=old_email,

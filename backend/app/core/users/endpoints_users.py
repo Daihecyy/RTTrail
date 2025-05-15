@@ -57,13 +57,13 @@ templates = Jinja2Templates(directory="assets/templates")
 
 @router.get(
     "/users",
-    response_model=list[schemas_users.CoreUserSimple],
+    response_model=list[schemas_users.UserSimple],
     status_code=200,
 )
 async def read_users(
     accountTypes: list[AccountType] = Query(default=[]),
     db: AsyncSession = Depends(get_db),
-    user: models_users.CoreUser = Depends(is_user(AccountType.admin)),
+    user: models_users.User = Depends(is_user(AccountType.admin)),
 ):
     """
     Return all users from database as a list of `CoreUserSimple`
@@ -83,7 +83,7 @@ async def read_users(
 )
 async def count_users(
     db: AsyncSession = Depends(get_db),
-    user: models_users.CoreUser = Depends(is_user(AccountType.admin)),
+    user: models_users.User = Depends(is_user(AccountType.admin)),
 ):
     """
     Return the number of users in the database
@@ -97,17 +97,15 @@ async def count_users(
 
 @router.get(
     "/users/search",
-    response_model=list[schemas_users.CoreUserSimple],
+    response_model=list[schemas_users.UserSimple],
     status_code=200,
 )
 async def search_users(
     query: str,
     includedAccountTypes: list[AccountType] = Query(default=[]),
     excludedAccountTypes: list[AccountType] = Query(default=[]),
-    includedGroups: list[str] = Query(default=[]),
-    excludedGroups: list[str] = Query(default=[]),
     db: AsyncSession = Depends(get_db),
-    user: models_users.CoreUser = Depends(is_user),
+    user: models_users.User = Depends(is_user),
 ):
     """
     Search for a user using Jaro_Winkler distance algorithm.
@@ -121,8 +119,6 @@ async def search_users(
         db,
         included_account_types=includedAccountTypes,
         excluded_account_types=excludedAccountTypes,
-        included_groups=includedGroups,
-        excluded_groups=excludedGroups,
     )
 
     return sort_user(string.capwords(query), users)
@@ -135,7 +131,7 @@ async def search_users(
 )
 async def get_account_types(
     db: AsyncSession = Depends(get_db),
-    user: models_users.CoreUser = Depends(is_user(AccountType.admin)),
+    user: models_users.User = Depends(is_user(AccountType.admin)),
 ):
     """
     Return all account types hardcoded in the system
@@ -146,11 +142,11 @@ async def get_account_types(
 
 @router.get(
     "/users/me",
-    response_model=schemas_users.CoreUser,
+    response_model=schemas_users.User,
     status_code=200,
 )
 async def read_current_user(
-    user: models_users.CoreUser = Depends(is_user()),
+    user: models_users.User = Depends(is_user()),
 ):
     """
     Return `CoreUser` representation of current user
@@ -167,7 +163,7 @@ async def read_current_user(
     status_code=201,
 )
 async def create_user_by_user(
-    user_create: schemas_users.CoreUserCreateRequest,
+    user_create: schemas_users.UserCreateRequest,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     settings: Settings = Depends(get_settings),
@@ -217,45 +213,6 @@ async def create_user_by_user(
     return standard_responses.Result(success=True)
 
 
-@router.post(
-    "/users/batch-creation",
-    response_model=standard_responses.BatchResult,
-    status_code=201,
-)
-async def batch_create_users(
-    user_creates: list[schemas_users.CoreBatchUserCreateRequest],
-    background_tasks: BackgroundTasks,
-    db: AsyncSession = Depends(get_db),
-    settings: Settings = Depends(get_settings),
-    request_id: str = Depends(get_request_id),
-    user: models_users.CoreUser = Depends(is_user(AccountType.admin)),
-):
-    """
-    Batch user account creation process. All users will be sent an email with a link to activate their account.
-    > The received token needs to be send to `/users/activate` endpoint to activate the account.
-
-    The endpoint return a dictionary of unsuccessful user creation: `{email: error message}`.
-
-    **This endpoint is only usable by administrators**
-    """
-
-    failed = {}
-
-    for user_create in user_creates:
-        try:
-            await create_user(
-                email=user_create.email,
-                background_tasks=background_tasks,
-                db=db,
-                settings=settings,
-                request_id=request_id,
-            )
-        except Exception as error:
-            failed[user_create.email] = str(error)
-
-    return standard_responses.BatchResult(failed=failed)
-
-
 async def create_user(
     email: str,
     background_tasks: BackgroundTasks,
@@ -278,7 +235,7 @@ async def create_user(
 
     # Add the unconfirmed user to the unconfirmed_user table
 
-    user_unconfirmed = models_users.CoreUserUnconfirmed(
+    user_unconfirmed = models_users.UserUnconfirmed(
         id=str(uuid.uuid4()),
         email=email,
         activation_token=activation_token,
@@ -316,7 +273,7 @@ async def create_user(
     status_code=201,
 )
 async def activate_user(
-    user: schemas_users.CoreUserActivateRequest,
+    user: schemas_users.UserActivateRequest,
     db: AsyncSession = Depends(get_db),
     request_id: str = Depends(get_request_id),
 ):
@@ -355,13 +312,14 @@ async def activate_user(
     # A password should have been provided
     password_hash = security.get_password_hash(user.password)
 
-    confirmed_user = models_users.CoreUser(
+    confirmed_user = models_users.User(
         id=unconfirmed_user.id,
         email=unconfirmed_user.email,
         account_type=AccountType.user,
         password_hash=password_hash,
         name=user.name,
         created_on=datetime.now(UTC),
+        is_active=True,
     )
     # We add the new user to the database
     await cruds_users.create_user(db=db, user=confirmed_user)
@@ -450,7 +408,7 @@ async def recover_user(
         # The user exists, we can send a password reset invitation
         reset_token = security.generate_token()
 
-        recover_request = models_users.CoreUserRecoverRequest(
+        recover_request = models_users.UserRecoverRequest(
             email=email,
             user_id=db_user.id,
             reset_token=reset_token,
@@ -526,7 +484,7 @@ async def reset_password(
 async def migrate_mail(
     mail_migration: schemas_users.MailMigrationRequest,
     db: AsyncSession = Depends(get_db),
-    user: models_users.CoreUser = Depends(is_user()),
+    user: models_users.User = Depends(is_user()),
     settings: Settings = Depends(get_settings),
 ):
     """
@@ -613,7 +571,7 @@ async def migrate_mail_confirm(
         await cruds_users.update_user(
             db=db,
             user_id=migration_object.user_id,
-            user_update=schemas_users.CoreUserUpdateAdmin(
+            user_update=schemas_users.UserUpdateAdmin(
                 email=migration_object.new_email,
             ),
         )
@@ -685,13 +643,13 @@ async def change_password(
 
 @router.get(
     "/users/{user_id}",
-    response_model=schemas_users.CoreUser,
+    response_model=schemas_users.User,
     status_code=200,
 )
 async def read_user(
     user_id: str,
     db: AsyncSession = Depends(get_db),
-    user: models_users.CoreUser = Depends(is_user(AccountType.admin)),
+    user: models_users.User = Depends(is_user(AccountType.admin)),
 ):
     """
     Return `CoreUser` representation of user with id `user_id`
@@ -722,7 +680,7 @@ async def read_user(
     status_code=204,
 )
 async def delete_user(
-    user: models_users.CoreUser = Depends(is_user()),
+    user: models_users.User = Depends(is_user()),
 ):
     """
     This endpoint will ask administrators to process to the user deletion.
@@ -738,9 +696,9 @@ async def delete_user(
     status_code=204,
 )
 async def update_current_user(
-    user_update: schemas_users.CoreUserUpdate,
+    user_update: schemas_users.UserUpdate,
     db: AsyncSession = Depends(get_db),
-    user: models_users.CoreUser = Depends(is_user()),
+    user: models_users.User = Depends(is_user()),
 ):
     """
     Update the current user, the request should contain a JSON with the fields to change (not necessarily all fields) and their new value
@@ -765,9 +723,9 @@ async def update_current_user(
 )
 async def update_user(
     user_id: str,
-    user_update: schemas_users.CoreUserUpdateAdmin,
+    user_update: schemas_users.UserUpdateAdmin,
     db: AsyncSession = Depends(get_db),
-    user: models_users.CoreUser = Depends(is_user(AccountType.admin)),
+    user: models_users.User = Depends(is_user(AccountType.admin)),
 ):
     """
     Update an user, the request should contain a JSON with the fields to change (not necessarily all fields) and their new value
@@ -796,7 +754,7 @@ async def update_user(
 )
 async def create_current_user_profile_picture(
     image: UploadFile = File(...),
-    user: models_users.CoreUser = Depends(is_user()),
+    user: models_users.User = Depends(is_user()),
     request_id: str = Depends(get_request_id),
 ):
     """
@@ -827,7 +785,7 @@ async def create_current_user_profile_picture(
     status_code=200,
 )
 async def read_own_profile_picture(
-    user: models_users.CoreUser = Depends(is_user()),
+    user: models_users.User = Depends(is_user()),
 ):
     """
     Get the profile picture of the authenticated user.

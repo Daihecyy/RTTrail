@@ -65,7 +65,7 @@ async def get_user_from_token_with_scopes(
     scopes: list[list[ScopeType]],
     db: AsyncSession,
     token_data: schemas_auth.TokenData,
-) -> models_users.CoreUser:
+) -> models_users.User:
     """
     Dependency that makes sure the token is valid, contains the expected scopes and returns the corresponding user.
     The expected scopes are passed as list of list of scopes, each list of scopes is an "AND" condition, and the list of list of scopes is an "OR" condition.

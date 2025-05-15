@@ -8,7 +8,7 @@ from app.utils.examples import examples_core
 from app.core.users.type_users import AccountType
 
 
-class CoreUserBase(BaseModel):
+class UserBase(BaseModel):
     """Base schema for user's model"""
 
     name: str
@@ -16,23 +16,24 @@ class CoreUserBase(BaseModel):
     _normalize_name = field_validator("name")(validators.trailing_spaces_remover)
 
 
-class CoreUserSimple(CoreUserBase):
+class UserSimple(UserBase):
     """Simplified schema for user's model, used when getting all users"""
 
     id: str
     account_type: AccountType
+    is_active: bool
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class CoreUser(CoreUserSimple):
+class User(UserSimple):
     """Schema for user's model similar to core_user table in database"""
 
     email: str
     created_on: datetime | None = None
 
 
-class CoreUserUpdate(BaseModel):
+class UserUpdate(BaseModel):
     """Schema for user update"""
 
     name: str | None = None
@@ -41,16 +42,17 @@ class CoreUserUpdate(BaseModel):
     model_config = ConfigDict(json_schema_extra=examples_core.example_CoreUserUpdate)
 
 
-class CoreUserUpdateAdmin(BaseModel):
+class UserUpdateAdmin(BaseModel):
     email: str | None = None
     account_type: AccountType | None = None
     name: str | None = None
+    is_active: bool | None = None
 
     _normalize_name = field_validator("name")(validators.trailing_spaces_remover)
     model_config = ConfigDict(json_schema_extra=examples_core.example_CoreUserUpdate)
 
 
-class CoreUserCreateRequest(BaseModel):
+class UserCreateRequest(BaseModel):
     """
     The schema is used to send an account creation request.
     """
@@ -65,23 +67,7 @@ class CoreUserCreateRequest(BaseModel):
     )
 
 
-class CoreBatchUserCreateRequest(BaseModel):
-    """
-    The schema is used for batch account creation requests.
-    """
-
-    email: str
-
-    # Email normalization, this will modify the email variable
-    # https://pydantic-docs.helpmanual.io/usage/validators/#reuse-validators
-    _normalize_email = field_validator("email")(validators.email_normalizer)
-    model_config = ConfigDict(
-        from_attributes=True,
-        json_schema_extra=examples_core.example_CoreBatchUserCreateRequest,
-    )
-
-
-class CoreUserActivateRequest(CoreUserBase):
+class UserActivateRequest(UserBase):
     activation_token: str
     password: str
     # Password validator
@@ -93,7 +79,7 @@ class CoreUserActivateRequest(CoreUserBase):
     )
 
 
-class CoreUserRecoverRequest(BaseModel):
+class UserRecoverRequest(BaseModel):
     email: str
     user_id: str
     reset_token: str
@@ -129,4 +115,4 @@ class MailMigrationRequest(BaseModel):
 
 # Importing here to avoid circular imports
 
-CoreUserSimple.model_rebuild()
+UserSimple.model_rebuild()

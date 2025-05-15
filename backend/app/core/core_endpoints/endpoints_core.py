@@ -43,7 +43,7 @@ async def read_information(
 
     return schemas_core.CoreInformation(
         ready=True,
-        version=settings.HYPERION_VERSION,
+        version=settings.RTTRAIL_VERSION,
     )
 
 
@@ -167,7 +167,7 @@ async def get_favicon():
 )
 async def get_module_visibility(
     db: AsyncSession = Depends(get_db),
-    user: models_users.CoreUser = Depends(is_user(AccountType.admin)),
+    user: models_users.User = Depends(is_user(AccountType.admin)),
 ):
     """
     Get all existing module_visibility.
@@ -198,7 +198,7 @@ async def get_module_visibility(
 )
 async def get_user_modules_visibility(
     db: AsyncSession = Depends(get_db),
-    user: models_users.CoreUser = Depends(is_user()),
+    user: models_users.User = Depends(is_user()),
 ):
     """
     Get group user accessible root
@@ -216,7 +216,7 @@ async def get_user_modules_visibility(
 async def add_module_visibility(
     module_visibility: schemas_core.ModuleVisibilityCreate,
     db: AsyncSession = Depends(get_db),
-    user: models_users.CoreUser = Depends(is_user(AccountType.admin)),
+    user: models_users.User = Depends(is_user(AccountType.admin)),
 ):
     """
     Add a new group or account type to a module
@@ -250,7 +250,7 @@ async def delete_module_account_type_visibility(
     root: str,
     account_type: AccountType,
     db: AsyncSession = Depends(get_db),
-    user: models_users.CoreUser = Depends(is_user(AccountType.admin)),
+    user: models_users.User = Depends(is_user(AccountType.admin)),
 ):
     await cruds_core.delete_module_account_type_visibility(
         root=root,

@@ -82,7 +82,7 @@ async def authenticate_user(
     db: AsyncSession,
     email: str,
     password: str,
-) -> models_users.CoreUser | None:
+) -> models_users.User | None:
     """
     Try to authenticate the user.
     If the user is unknown or the password is invalid return `None`. Else return the user's *CoreUser* representation.

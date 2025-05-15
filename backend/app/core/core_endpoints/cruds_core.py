@@ -8,7 +8,7 @@ from app.core.users import models_users
 
 
 async def get_modules_by_user(
-    user: models_users.CoreUser,
+    user: models_users.User,
     db: AsyncSession,
 ) -> list[str]:
     """Return the modules a user has access to"""

@@ -137,7 +137,7 @@ def get_user_from_token_with_scopes(
     scopes: list[list[ScopeType]],
 ) -> Callable[
     [AsyncSession, schemas_auth.TokenData],
-    Coroutine[Any, Any, models_users.CoreUser],
+    Coroutine[Any, Any, models_users.User],
 ]:
     """
     Generate a dependency which will:
@@ -152,7 +152,7 @@ def get_user_from_token_with_scopes(
     async def get_current_user(
         db: AsyncSession = Depends(get_db),
         token_data: schemas_auth.TokenData = Depends(get_token_data),
-    ) -> models_users.CoreUser:
+    ) -> models_users.User:
         """
         Dependency that makes sure the token is valid, contains the expected scopes and returns the corresponding user.
         The expected scopes are passed as list of list of scopes, each list of scopes is an "AND" condition, and the list of list of scopes is an "OR" condition.
@@ -169,7 +169,7 @@ def get_user_from_token_with_scopes(
 
 def is_user(
     account_type: AccountType | None = None,
-) -> Callable[[models_users.CoreUser], models_users.CoreUser]:
+) -> Callable[[models_users.User], models_users.User]:
     """
     A dependency that will:
         * check if the request header contains a valid API JWT token (a token that can be used to call endpoints from the API)
@@ -179,10 +179,10 @@ def is_user(
     account_type = account_type or AccountType.user
 
     def is_user(
-        user: models_users.CoreUser = Depends(
+        user: models_users.User = Depends(
             get_user_from_token_with_scopes([[ScopeType.API]]),
         ),
-    ) -> models_users.CoreUser:
+    ) -> models_users.User:
         if user.account_type == AccountType.admin:
             return user
         if account_type == AccountType.admin:

@@ -3,7 +3,7 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
-from app.core.users.schemas_users import CoreUserSimple
+from app.core.users.schemas_users import UserSimple
 
 
 class FlappyBirdScoreBase(BaseModel):
@@ -11,7 +11,7 @@ class FlappyBirdScoreBase(BaseModel):
 
 
 class FlappyBirdScore(FlappyBirdScoreBase):
-    user: CoreUserSimple
+    user: UserSimple
     creation_time: datetime
 
 
