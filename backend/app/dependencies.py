@@ -12,8 +12,7 @@ from collections.abc import AsyncGenerator, Callable, Coroutine
 from functools import lru_cache
 from typing import Any, cast
 
-import redis
-from fastapi import BackgroundTasks, Depends, HTTPException, Request, status
+from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -28,10 +27,6 @@ from app.core.utils import security
 from app.core.utils.config import Settings, construct_prod_settings
 from app.types.scopes_type import ScopeType
 from app.utils.auth import auth_utils
-from app.utils.tools import (
-    is_user_external,
-    is_user_member_of_any_group,
-)
 
 # We could maybe use hyperion.security
 rttrail_access_logger = logging.getLogger("rttrail.access")
@@ -174,7 +169,6 @@ def get_user_from_token_with_scopes(
 
 def is_user(
     account_type: AccountType | None = None,
-    exclude_external: bool = False,
 ) -> Callable[[models_users.CoreUser], models_users.CoreUser]:
     """
     A dependency that will:
