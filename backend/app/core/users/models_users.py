@@ -1,8 +1,7 @@
-from datetime import date, datetime
-from uuid import UUID
+from datetime import datetime
 
 from sqlalchemy import ForeignKey, String
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.users.type_users import AccountType
 from app.types.sqlalchemy import Base

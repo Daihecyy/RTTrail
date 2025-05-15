@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeVar
 
 import aiofiles
-import fitz
 from fastapi import HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.templating import Jinja2Templates

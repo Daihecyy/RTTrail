@@ -1,7 +1,6 @@
-from datetime import date, datetime
-from uuid import UUID
+from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from app.utils import validators
 from app.utils.examples import examples_core
