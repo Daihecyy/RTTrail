@@ -57,10 +57,7 @@ def init_and_get_db_engine(settings: Settings) -> AsyncEngine:
     """
     global engine
     global SessionLocal
-    if settings.SQLITE_DB:
-        SQLALCHEMY_DATABASE_URL = f"sqlite+aiosqlite:///./{settings.SQLITE_DB}"
-    else:
-        SQLALCHEMY_DATABASE_URL = f"postgresql+asyncpg://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@{settings.POSTGRES_HOST}/{settings.POSTGRES_DB}"
+    SQLALCHEMY_DATABASE_URL = f"postgresql+asyncpg://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@{settings.POSTGRES_PORT}/{settings.POSTGRES_DB}"
 
     if engine is None:
         engine = create_async_engine(

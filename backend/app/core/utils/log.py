@@ -159,7 +159,6 @@ class LogConfig:
                 "rttrail.security": {
                     "handlers": [
                         "file_security",
-                        "matrix_errors",
                         "console",
                     ],
                     "level": MINIMUM_LOG_LEVEL,
@@ -169,7 +168,6 @@ class LogConfig:
                 "rttrail.error": {
                     "handlers": [
                         "file_errors",
-                        "matrix_errors",
                         "console",
                     ],
                     "level": MINIMUM_LOG_LEVEL,
@@ -186,7 +184,6 @@ class LogConfig:
                 "uvicorn.error": {
                     "handlers": [
                         "file_errors",
-                        "matrix_errors",
                         "console",
                     ],
                     "level": MINIMUM_LOG_LEVEL,

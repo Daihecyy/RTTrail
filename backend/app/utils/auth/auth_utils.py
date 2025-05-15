@@ -26,7 +26,7 @@ def get_token_data(
     try:
         payload = jwt.decode(
             token,
-            settings.ACCESS_TOKEN_SECRET_KEY,
+            settings.SECRET_KEY,
             algorithms=[security.jwt_algorithm],
         )
         token_data = schemas_auth.TokenData(**payload)

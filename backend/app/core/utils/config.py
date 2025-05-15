@@ -1,291 +1,132 @@
-from functools import cached_property
-from typing import Any
+import secrets
+import warnings
+from typing import Annotated, Any, Literal
 
-import jwt
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.primitives.serialization import load_pem_private_key
-from pydantic import computed_field, model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
-
-from app.types.exceptions import (
-    DotenvInvalidAuthClientNameInError,
-    DotenvInvalidVariableError,
-    DotenvMissingVariableError,
-    InvalidRSAKeyInDotenvError,
+from pydantic import (
+    AnyUrl,
+    BeforeValidator,
+    EmailStr,
+    HttpUrl,
+    PostgresDsn,
+    computed_field,
+    model_validator,
 )
-from app.utils.auth import providers
+from pydantic_core import MultiHostUrl
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing_extensions import Self
+
+
+def parse_cors(v: Any) -> list[str] | str:
+    if isinstance(v, str) and not v.startswith("["):
+        return [i.strip() for i in v.split(",")]
+    elif isinstance(v, list | str):
+        return v
+    raise ValueError(v)
 
 
 class Settings(BaseSettings):
-    """
-    Settings for Hyperion
-    The class is based on a dotenv file: `/.env`. All undefined variables will be populated from:
-    1. An environment variable
-    2. The dotenv .env file
-
-    See [Pydantic Settings documentation](https://docs.pydantic.dev/latest/concepts/pydantic_settings/#dotenv-env-support) for more information.
-    See [FastAPI settings](https://fastapi.tiangolo.com/advanced/settings/) article for best practices with settings.
-
-    To access these settings, the `get_settings` dependency should be used.
-    """
-
-    # By default, the settings are loaded from the `.env` file but this behaviour can be overridden by using
-    # `_env_file` parameter during instantiation
-    # Ex: `Settings(_env_file=".env.dev")`
-    # Without this property, @cached_property decorator raise "TypeError: cannot pickle '_thread.RLock' object"
-    # See https://github.com/samuelcolvin/pydantic/issues/1241
     model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        case_sensitive=False,
+        # Use top level .env file (one level above ./backend/)
+        env_file="./.env",
+        env_ignore_empty=True,
         extra="ignore",
     )
+    API_V1_STR: str = "/api/v1"
+    SECRET_KEY: str = secrets.token_urlsafe(32)
+    # 60 minutes * 24 hours * 8 days = 8 days
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
+    FRONTEND_HOST: str = "http://localhost:5173"
+    ENVIRONMENT: Literal["local", "staging", "production"] = "local"
+    RTTRAIL_VERSION: str
 
-    # NOTE: Variables without a value should not be configured in this class, but added to the dotenv .env file
+    BACKEND_CORS_ORIGINS: Annotated[
+        list[AnyUrl] | str, BeforeValidator(parse_cors)
+    ] = []
 
-    #####################################
-    # SMTP configuration using starttls #
-    #####################################
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def all_cors_origins(self) -> list[str]:
+        return [str(origin).rstrip("/") for origin in self.BACKEND_CORS_ORIGINS] + [
+            self.FRONTEND_HOST
+        ]
 
-    SMTP_ACTIVE: bool = False
-    SMTP_PORT: int
-    SMTP_SERVER: str
-    SMTP_USERNAME: str
-    SMTP_PASSWORD: str
-    SMTP_EMAIL: str
+    LOG_DEBUG_MESSAGES: bool = False
 
-    ############################
-    # PostgreSQL configuration #
-    ############################
-    # PostgreSQL configuration is needed to use the database
-    SQLITE_DB: str | None = (
-        None  # If set, the application use a SQLite database instead of PostgreSQL, for testing or development purposes (should not be used if possible)
-    )
-    POSTGRES_HOST: str = ""
-    POSTGRES_USER: str = ""
+    PROJECT_NAME: str
+    SENTRY_DSN: HttpUrl | None = None
+    POSTGRES_SERVER: str
+    POSTGRES_PORT: int = 5432
+    POSTGRES_USER: str
     POSTGRES_PASSWORD: str = ""
     POSTGRES_DB: str = ""
-    POSTGRES_TZ: str = ""
-    DATABASE_DEBUG: bool = False  # If True, the database will log all queries
+    DATABASE_DEBUG: bool = False
+    RTTRAIL_INIT_DB: bool = False
 
-    #####################
-    # Hyperion settings #
-    #####################
-
-    # By default, only production's records are logged
-    LOG_DEBUG_MESSAGES: bool | None
-
-    # Origins for the CORS middleware. `["http://localhost"]` can be used for development.
-    # See https://fastapi.tiangolo.com/tutorial/cors/
-    # It should begin with 'http://' or 'https:// and should never end with a '/'
-    CORS_ORIGINS: list[str]
-
-    ###################
-    # Tokens validity #
-    ###################
-
-    USER_ACTIVATION_TOKEN_EXPIRE_HOURS: int = 24
-    PASSWORD_RESET_TOKEN_EXPIRE_HOURS: int = 12
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 14  # 14 days
-    AUTHORIZATION_CODE_EXPIRE_MINUTES: int = 7
-
-    ###############################################
-    # Authorization using OAuth or Openid connect #
-    ###############################################
-
-    # ACCESS_TOKEN_SECRET_KEY should contain a random string with enough entropy (at least 32 bytes long) to securely sign all access_tokens for OAuth and Openid connect
-    ACCESS_TOKEN_SECRET_KEY: str
-    # RSA_PRIVATE_PEM_STRING should be a string containing the PEM certificate of a private RSA key. It will be used to sign id_tokens for Openid connect authentication
-    # In the pem certificates newlines can be replaced by `\n`
-    RSA_PRIVATE_PEM_STRING: bytes
-
-    # Host or url of the instance of Hyperion
-    # This url will be especially used for oidc/oauth2 discovery endpoint and links send be email
-    # NOTE: A trailing / is required
-    CLIENT_URL: str
-
-    # Sometimes, when running third services with oidc inside Docker containers, and running Hyperion on your local device
-    # you may need to use a different url for call made from docker and call made from your device
-    # For exemple:
-    #   you will access the login page from your browser http://localhost:8000/auth/authorize
-    #   but the docker container should call http://host.docker.internal:8000/auth/token and not your localhost address
-    # NOTE: A trailing / is required
-    OVERRIDDEN_CLIENT_URL_FOR_OIDC: str | None = None
-
-    # Add an AUTH_CLIENTS variable to the .env dotenv to configure auth clients
-    # This variable should have the format: [["client id", "client secret", "redirect_uri", "app.utils.auth.providers class name"]]
-    # Use an empty secret `null` or `""` to use PKCE instead of a client secret
-    # Ex: AUTH_CLIENTS=[["Nextcloudclient", "supersecret", "https://mynextcloud.instance/", "NextcloudAuthClient"], ["Piwigo", "secret2", "https://mypiwigo.instance/", "BaseAuthClient"], ["mobileapp", null, "https://titan/", "BaseAuthClient"]]
-    # NOTE: AUTH_CLIENTS property should never be used in the code. To get an auth client, use `KNOWN_AUTH_CLIENTS`
-    AUTH_CLIENTS: list[tuple[str, str | None, list[str], str]]
-
-    # MyECLPay requires an external service to recurrently check for transactions and state integrity, this service needs an access to all the data related to the transactions and the users involved
-    # This service will use a special token to access the data
-    # If this token is not set, the service will not be able to access the data and no integrity check will be performed
-
-    #################################
-    # Hardcoded Hyperion parameters #
-    #################################
-
-    # Hyperion follows Semantic Versioning
-    # https://semver.org/
-    RTTRAIL_VERSION: str = "4.4.1"
-
-    ######################################
-    # Automatically generated parameters #
-    ######################################
-
-    # If Hyperion should initialize the database on startup
-    # This environment variable is set by our init Python file to tell the workers to avoid initializing the database
-    # You don't want to set this variable manually
-    RTTRAIL_INIT_DB: bool = True
-
-    # The following properties can not be instantiated as class variables as them need to be computed using another property from the class,
-    # which won't be available before the .env file parsing.
-    # We thus decide to use the decorator `@property` to make these methods usable as properties and not functions: as properties: Settings.RSA_PRIVATE_KEY, Settings.RSA_PUBLIC_KEY and Settings.RSA_PUBLIC_JWK
-    # Their values should not change, we don't want to recompute all of them overtimes. We use the `@lru_cache` decorator to cache them.
-    # The combination of `@property` and `@lru_cache` should be replaced by `@cached_property`
-    # See https://docs.python.org/3.8/library/functools.html?highlight=#functools.cached_property
-
-    @computed_field  # type: ignore[misc] # Current issue with mypy, see https://docs.pydantic.dev/2.0/usage/computed_fields/ and https://github.com/python/mypy/issues/1362
-    @cached_property
-    def RSA_PRIVATE_KEY(cls) -> rsa.RSAPrivateKey:
-        # https://cryptography.io/en/latest/hazmat/primitives/asymmetric/serialization/#module-cryptography.hazmat.primitives.serialization
-        private_key = load_pem_private_key(cls.RSA_PRIVATE_PEM_STRING, password=None)
-        if not isinstance(private_key, rsa.RSAPrivateKey):
-            raise InvalidRSAKeyInDotenvError(private_key.__class__.__name__)
-        return private_key
-
-    @computed_field  # type: ignore[misc]
-    @cached_property
-    def RSA_PUBLIC_KEY(cls) -> rsa.RSAPublicKey:
-        return cls.RSA_PRIVATE_KEY.public_key()
-
-    @computed_field  # type: ignore[misc]
-    @cached_property
-    def RSA_PUBLIC_JWK(cls) -> dict[str, list[dict[str, Any]]]:
-        # See https://github.com/jpadilla/pyjwt/issues/880
-        algo = jwt.get_algorithm_by_name("RS256")
-        jwk = algo.to_jwk(cls.RSA_PUBLIC_KEY, as_dict=True)
-        jwk.update(
-            {
-                "use": "sig",
-                "kid": "RSA-JWK-1",  # The kid allows to identify the key in the JWKS, it should match the kid in the token header
-            },
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:
+        return MultiHostUrl.build(
+            scheme="postgresql+psycopg",
+            username=self.POSTGRES_USER,
+            password=self.POSTGRES_PASSWORD,
+            host=self.POSTGRES_SERVER,
+            port=self.POSTGRES_PORT,
+            path=self.POSTGRES_DB,
         )
-        return {"keys": [jwk]}
 
-    # This property parse AUTH_CLIENTS to create a dictionary of auth clients:
-    # {"client_id": AuthClientClassInstance}
-    @computed_field  # type: ignore[misc]
-    @cached_property
-    def KNOWN_AUTH_CLIENTS(cls) -> dict[str, providers.BaseAuthClient]:
-        clients = {}
-        for client_id, secret, redirect_uri, auth_client_name in cls.AUTH_CLIENTS:
-            try:
-                auth_client_class: type[providers.BaseAuthClient] = getattr(
-                    providers,
-                    auth_client_name,
-                )
-            except AttributeError as error:
-                raise DotenvInvalidAuthClientNameInError(
-                    auth_client_name,
-                ) from error
-
-            # We can create a new instance of the auth_client_class with the client id and secret
-            clients[client_id] = auth_client_class(
-                client_id=client_id,
-                # If the secret is empty, this mean the client is expected to use PKCE
-                # We need to pass a None value to the auth_client_class instead of an other falsy value
-                secret=secret or None,
-                redirect_uri=redirect_uri,
-            )
-
-        return clients
-
-    @computed_field  # type: ignore[misc]
-    @cached_property
-    def OIDC_ISSUER(cls) -> str:
-        return cls.CLIENT_URL[:-1]
-
-    #######################################
-    #          Fields validation          #
-    #######################################
-
-    # Validators may be used to perform more complexe validation
-    # For example, we can check that at least one of two optional fields is set or that the RSA key is provided and valid
+    SMTP_TLS: bool = True
+    SMTP_SSL: bool = False
+    SMTP_PORT: int = 587
+    SMTP_HOST: str | None = None
+    SMTP_USER: str | None = None
+    SMTP_PASSWORD: str | None = None
+    EMAILS_FROM_EMAIL: EmailStr | None = None
+    EMAILS_FROM_NAME: EmailStr | None = None
 
     @model_validator(mode="after")
-    def check_client_urls(self) -> "Settings":
-        """
-        All fields are optional, but the dotenv should configure SQLITE_DB or a Postgres database
-        """
-        if not self.CLIENT_URL[-1] == "/":
-            raise DotenvInvalidVariableError(  # noqa: TRY003
-                "CLIENT_URL must contains a trailing slash",
+    def _set_default_emails_from(self) -> Self:
+        if not self.EMAILS_FROM_NAME:
+            self.EMAILS_FROM_NAME = self.PROJECT_NAME
+        return self
+
+    EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 48
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def emails_enabled(self) -> bool:
+        return bool(self.SMTP_HOST and self.EMAILS_FROM_EMAIL)
+
+    EMAIL_TEST_USER: EmailStr = "test@example.com"
+    FIRST_SUPERUSER: EmailStr
+    FIRST_SUPERUSER_PASSWORD: str
+
+    def _check_default_secret(self, var_name: str, value: str | None) -> None:
+        if value == "changethis":
+            message = (
+                f'The value of {var_name} is "changethis", '
+                "for security, please change it, at least for deployments."
             )
-        if (
-            self.OVERRIDDEN_CLIENT_URL_FOR_OIDC
-            and not self.OVERRIDDEN_CLIENT_URL_FOR_OIDC[-1] == "/"
-        ):
-            raise DotenvInvalidVariableError(  # noqa: TRY003
-                "OVERRIDDEN_CLIENT_URL_FOR_OIDC must contains a trailing slash",
-            )
+            if self.ENVIRONMENT == "local":
+                warnings.warn(message, stacklevel=1)
+            else:
+                raise ValueError(message)
+
+    @model_validator(mode="after")
+    def _enforce_non_default_secrets(self) -> Self:
+        self._check_default_secret("SECRET_KEY", self.SECRET_KEY)
+        self._check_default_secret("POSTGRES_PASSWORD", self.POSTGRES_PASSWORD)
+        self._check_default_secret(
+            "FIRST_SUPERUSER_PASSWORD", self.FIRST_SUPERUSER_PASSWORD
+        )
 
         return self
 
-    @model_validator(mode="after")
-    def check_database_settings(self) -> "Settings":
-        """
-        All fields are optional, but the dotenv should configure SQLITE_DB or a Postgres database
-        """
-        if not (
-            self.SQLITE_DB
-            or (
-                self.POSTGRES_HOST
-                and self.POSTGRES_USER
-                and self.POSTGRES_PASSWORD
-                and self.POSTGRES_DB
-            )
-        ):
-            raise DotenvMissingVariableError(  # noqa: TRY003
-                "Either SQLITE_DB or POSTGRES_HOST, POSTGRES_USER, POSTGRES_PASSWORD and POSTGRES_DB",
-            )
 
-        return self
-
-    @model_validator(mode="after")
-    def check_secrets(self) -> "Settings":
-        if not self.ACCESS_TOKEN_SECRET_KEY:
-            raise DotenvMissingVariableError(
-                "ACCESS_TOKEN_SECRET_KEY",
-            )
-
-        if not self.RSA_PRIVATE_PEM_STRING:
-            raise DotenvMissingVariableError(
-                "RSA_PRIVATE_PEM_STRING",
-            )
-
-        return self
-
-    @model_validator(mode="after")
-    def init_cached_property(self) -> "Settings":
-        """
-        Cached property are not computed during the instantiation of the class, but when they are accessed for the first time.
-        By calling them in this validator, we force their initialization during the instantiation of the class.
-        This allow them to raise error on Hyperion startup if they are not correctly configured instead of creating an error on runtime.
-        """
-        self.KNOWN_AUTH_CLIENTS  # noqa
-        self.RSA_PRIVATE_KEY  # noqa
-        self.RSA_PUBLIC_KEY  # noqa
-        self.RSA_PUBLIC_JWK  # noqa
-
-        return self
+settings = Settings()  # type: ignore
 
 
 def construct_prod_settings() -> Settings:
     """
     Return the production settings
     """
-    return Settings(_env_file=".env")
+    return settings
