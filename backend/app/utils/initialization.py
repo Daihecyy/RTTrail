@@ -1,4 +1,6 @@
+from datetime import UTC, datetime
 from typing import TypeVar
+import uuid
 
 from pydantic import ValidationError
 from sqlalchemy import Connection, MetaData, delete, select
@@ -7,12 +9,40 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.core_endpoints import models_core
-from app.core.utils.config import Settings
+from app.core.utils.config import Settings, settings
 from app.types import core_data
 from app.types.exceptions import CoreDataNotFoundError
 from app.types.sqlalchemy import Base
+from app.core.users import models_users
+from app.core.users.type_users import AccountType
+from app.core.utils.security import get_password_hash
 
 # These utils are used at startup to run database initializations & migrations
+
+
+def init_superadmin(db: Session) -> models_users.User | None:
+    """Return user with superadmin email"""
+    user = db.execute(
+        select(models_users.User).where(
+            models_users.User.email == settings.FIRST_SUPERUSER
+        )
+    ).first()
+    if user is None:
+        user = models_users.User(
+            name="Super admin",
+            id=str(uuid.uuid4()),
+            email=settings.FIRST_SUPERUSER,
+            password_hash=get_password_hash(settings.FIRST_SUPERUSER_PASSWORD),
+            account_type=AccountType.admin,
+            is_active=True,
+            created_on=datetime.now(UTC),
+        )
+        db.add(user)
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            raise
 
 
 def get_sync_db_engine(settings: Settings) -> Engine:

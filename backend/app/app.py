@@ -16,6 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 from sqlalchemy.engine import Connection, Engine
+from sqlalchemy.orm import Session
 
 from app.api import api_router
 from app.core.utils.config import Settings
@@ -181,6 +182,8 @@ def init_db(
         rttrail_error_logger=hyperion_error_logger,
         drop_db=drop_db,
     )
+    with Session(sync_engine) as db:
+        initialization.init_superadmin(db=db)
 
 
 # We wrap the application in a function to be able to pass the settings and drop_db parameters
