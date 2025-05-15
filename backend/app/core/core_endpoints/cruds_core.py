@@ -1,11 +1,9 @@
-from collections.abc import Sequence
-
 from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.core_endpoints import models_core
-from app.core.groups.groups_type import AccountType
+from app.core.users.type_users import AccountType
 from app.core.users import models_users
 
 
@@ -15,24 +13,6 @@ async def get_modules_by_user(
 ) -> list[str]:
     """Return the modules a user has access to"""
 
-    userGroupIds = [group.id for group in user.groups]
-
-    result_group = list(
-        (
-            await db.execute(
-                select(models_core.ModuleGroupVisibility.root)
-                .where(
-                    models_core.ModuleGroupVisibility.allowed_group_id.in_(
-                        userGroupIds,
-                    ),
-                )
-                .group_by(models_core.ModuleGroupVisibility.root),
-            )
-        )
-        .unique()
-        .scalars()
-        .all(),
-    )
     result_account_type = list(
         (
             await db.execute(
@@ -47,29 +27,14 @@ async def get_modules_by_user(
         .all(),
     )
 
-    return result_group + result_account_type
-
-
-async def get_allowed_groups_by_root(
-    root: str,
-    db: AsyncSession,
-) -> Sequence[str]:
-    """Return the groups allowed to access to a specific root"""
-
-    result = await db.execute(
-        select(
-            models_core.ModuleGroupVisibility.allowed_group_id,
-        ).where(models_core.ModuleGroupVisibility.root == root),
-    )
-
-    return result.unique().scalars().all()
+    return result_account_type
 
 
 async def get_allowed_account_types_by_root(
     root: str,
     db: AsyncSession,
-) -> Sequence[str]:
-    """Return the groups allowed to access to a specific root"""
+) -> list[AccountType]:
+    """Return the account types allowed to access to a specific root"""
 
     result = await db.execute(
         select(
@@ -77,21 +42,7 @@ async def get_allowed_account_types_by_root(
         ).where(models_core.ModuleAccountTypeVisibility.root == root),
     )
 
-    return result.unique().scalars().all()
-
-
-async def create_module_group_visibility(
-    module_visibility: models_core.ModuleGroupVisibility,
-    db: AsyncSession,
-) -> None:
-    """Create a new module visibility in database and return it"""
-
-    db.add(module_visibility)
-    try:
-        await db.commit()
-    except IntegrityError:
-        await db.rollback()
-        raise
+    return list(result.unique().scalars().all())
 
 
 async def create_module_account_type_visibility(
@@ -106,20 +57,6 @@ async def create_module_account_type_visibility(
     except IntegrityError:
         await db.rollback()
         raise
-
-
-async def delete_module_group_visibility(
-    root: str,
-    allowed_group_id: str,
-    db: AsyncSession,
-):
-    await db.execute(
-        delete(models_core.ModuleGroupVisibility).where(
-            models_core.ModuleGroupVisibility.root == root,
-            models_core.ModuleGroupVisibility.allowed_group_id == allowed_group_id,
-        ),
-    )
-    await db.commit()
 
 
 async def delete_module_account_type_visibility(

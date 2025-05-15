@@ -2,7 +2,7 @@
 
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.groups.groups_type import AccountType
+from app.core.users.type_users import AccountType
 from app.types.sqlalchemy import Base
 
 
@@ -22,13 +22,6 @@ class CoreData(Base):
     data: Mapped[str]
 
 
-class ModuleGroupVisibility(Base):
-    __tablename__ = "module_group_visibility"
-
-    root: Mapped[str] = mapped_column(primary_key=True)
-    allowed_group_id: Mapped[str] = mapped_column(primary_key=True)
-
-
 class ModuleAccountTypeVisibility(Base):
     __tablename__ = "module_account_type_visibility"
 
@@ -42,7 +35,7 @@ class AlembicVersion(Base):
     This model allows to have exactly the same tables in the models and in the database.
     Without this model, SQLAlchemy `conn.run_sync(Base.metadata.drop_all)` will ignore this table.
 
-    WARNING: Hyperion should not modify this table.
+    WARNING: RTTrail should not modify this table.
     """
 
     __tablename__ = "alembic_version"
