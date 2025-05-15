@@ -241,7 +241,7 @@ async def create_user(
         activation_token=activation_token,
         created_on=datetime.now(UTC),
         expire_on=datetime.now(UTC)
-        + timedelta(hours=settings.USER_ACTIVATION_TOKEN_EXPIRE_HOURS),
+        + timedelta(hours=settings.EMAIL_RESET_TOKEN_EXPIRE_HOURS),
     )
 
     await cruds_users.create_unconfirmed_user(user_unconfirmed=user_unconfirmed, db=db)
@@ -414,7 +414,7 @@ async def recover_user(
             reset_token=reset_token,
             created_on=datetime.now(UTC),
             expire_on=datetime.now(UTC)
-            + timedelta(hours=settings.PASSWORD_RESET_TOKEN_EXPIRE_HOURS),
+            + timedelta(hours=settings.EMAIL_RESET_TOKEN_EXPIRE_HOURS),
         )
 
         await cruds_users.create_user_recover_request(

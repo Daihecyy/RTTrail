@@ -27,7 +27,7 @@ class UserSimple(UserBase):
 
 
 class User(UserSimple):
-    """Schema for user's model similar to core_user table in database"""
+    """Schema for user's model similar to user table in database"""
 
     email: str
     created_on: datetime | None = None

@@ -16,16 +16,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 from sqlalchemy.engine import Connection, Engine
-from sqlalchemy.orm import Session
 
-from app import api
-from app.core.core_endpoints import coredata_core, models_core
+from app.api import api_router
 from app.core.utils.config import Settings
 from app.core.utils.log import LogConfig
 from app.dependencies import (
     init_and_get_db_engine,
 )
-from app.modules.module_list import module_list
 from app.types.exceptions import ContentHTTPException
 from app.types.sqlalchemy import Base
 from app.utils import initialization
@@ -148,61 +145,6 @@ def update_db_tables(
         raise
 
 
-def initialize_module_visibility(
-    sync_engine: Engine,
-    rttrail_error_logger: logging.Logger,
-) -> None:
-    """Add the default module visibilities for Titan"""
-
-    with Session(sync_engine) as db:
-        module_awareness = initialization.get_core_data_sync(
-            coredata_core.ModuleVisibilityAwareness,
-            db,
-        )
-
-        new_modules = [
-            module
-            for module in module_list
-            if module.root not in module_awareness.roots
-        ]
-        # Is run to create default module visibilities or when the table is empty
-        if new_modules:
-            rttrail_error_logger.info(
-                f"Startup: Some modules visibility settings are empty, initializing them ({[module.root for module in new_modules]})",
-            )
-            for module in new_modules:
-                if module.default_allowed_account_types is not None:
-                    for account_type in module.default_allowed_account_types:
-                        module_account_type_visibility = (
-                            models_core.ModuleAccountTypeVisibility(
-                                root=module.root,
-                                allowed_account_type=account_type,
-                            )
-                        )
-                        try:
-                            initialization.create_module_account_type_visibility_sync(
-                                module_visibility=module_account_type_visibility,
-                                db=db,
-                            )
-                        except ValueError as error:
-                            rttrail_error_logger.fatal(
-                                f"Startup: Could not add module visibility {module.root} in the database: {error}",
-                            )
-            initialization.set_core_data_sync(
-                coredata_core.ModuleVisibilityAwareness(
-                    roots=[module.root for module in module_list],
-                ),
-                db,
-            )
-            rttrail_error_logger.info(
-                f"Startup: Modules visibility settings initialized for {[module.root for module in new_modules]}",
-            )
-        else:
-            rttrail_error_logger.info(
-                "Startup: Modules visibility settings already initialized",
-            )
-
-
 def use_route_path_as_operation_ids(app: FastAPI) -> None:
     """
     Simplify operation IDs so that generated API clients have simpler function names.
@@ -240,12 +182,6 @@ def init_db(
         drop_db=drop_db,
     )
 
-    # Initialize database tables
-    initialize_module_visibility(
-        sync_engine=sync_engine,
-        rttrail_error_logger=hyperion_error_logger,
-    )
-
 
 # We wrap the application in a function to be able to pass the settings and drop_db parameters
 # The drop_db parameter is used to drop the database tables before creating them again
@@ -274,7 +210,7 @@ def get_application(settings: Settings, drop_db: bool = False) -> FastAPI:
         version=settings.RTTRAIL_VERSION,
         lifespan=lifespan,
     )
-    app.include_router(api.api_router)
+    app.include_router(api_router)
     use_route_path_as_operation_ids(app)
 
     app.add_middleware(

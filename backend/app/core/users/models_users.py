@@ -8,7 +8,7 @@ from app.types.sqlalchemy import Base
 
 
 class User(Base):
-    __tablename__ = "core_user"
+    __tablename__ = "user"
 
     id: Mapped[str] = mapped_column(
         primary_key=True,
@@ -23,7 +23,7 @@ class User(Base):
 
 
 class UserUnconfirmed(Base):
-    __tablename__ = "core_user_unconfirmed"
+    __tablename__ = "user_unconfirmed"
 
     id: Mapped[str] = mapped_column(primary_key=True)
     # The email column should not be unique.
@@ -37,7 +37,7 @@ class UserUnconfirmed(Base):
 
 
 class UserRecoverRequest(Base):
-    __tablename__ = "core_user_recover_request"
+    __tablename__ = "user_recover_request"
 
     # The email column should not be unique.
     # Someone can indeed create more than one password reset request,
@@ -49,9 +49,9 @@ class UserRecoverRequest(Base):
 
 
 class UserEmailMigrationCode(Base):
-    __tablename__ = "core_user_email_migration_code"
+    __tablename__ = "user_email_migration_code"
 
-    user_id: Mapped[str] = mapped_column(ForeignKey("core_user.id"), primary_key=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("user.id"), primary_key=True)
     new_email: Mapped[str]
     old_email: Mapped[str]
 
