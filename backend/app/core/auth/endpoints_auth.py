@@ -4,7 +4,6 @@ import logging
 import urllib.parse
 from datetime import UTC, datetime, timedelta
 
-import calypsso
 import jwt
 from fastapi import (
     APIRouter,
@@ -42,7 +41,6 @@ from app.types.exceptions import AuthHTTPException
 from app.types.module import CoreModule
 from app.types.scopes_type import ScopeType
 from app.utils.auth.providers import BaseAuthClient
-from app.utils.tools import is_user_member_of_any_group
 
 router = APIRouter(tags=["Auth"])
 

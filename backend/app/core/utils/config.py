@@ -54,79 +54,6 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str
     SMTP_EMAIL: str
 
-    ########################
-    # Matrix configuration #
-    ########################
-    # Matrix configuration is optional. If configured, Hyperion will be able to send messages to a Matrix server.
-    # This configuration will be used to send errors messages.
-    # If the following parameters are not set, logging won't use the Matrix handler
-    # MATRIX_SERVER_BASE_URL is optional, the official Matrix server will be used if not configured
-    # Advanced note: Username and password will be used to ask for an access token. A Matrix custom client `Hyperion` is used to make all requests
-    MATRIX_SERVER_BASE_URL: str | None = None
-    MATRIX_TOKEN: str | None = None
-    MATRIX_LOG_ERROR_ROOM_ID: str | None = None
-    MATRIX_LOG_AMAP_ROOM_ID: str | None = None
-
-    #############################
-    # Token to use the TMDB API #
-    #############################
-    # This API key is required in order to send requests to the Internet Movie Database.
-    # It is only used in the Cinema module.
-    THE_MOVIE_DB_API: str | None = None
-
-    ########################
-    # Redis configuration #
-    ########################
-    # Redis configuration is needed to use the rate limiter
-    # We use the default redis configuration, so the protected mode is enabled by default (see https://redis.io/docs/manual/security/#protected-mode)
-    # If you want to use a custom configuration, a password and a specific binds should be used to avoid security issues
-    REDIS_HOST: str
-    REDIS_PORT: int
-    REDIS_PASSWORD: str | None = None
-    REDIS_LIMIT: int
-    REDIS_WINDOW: int
-
-    ##############
-    # Google API #
-    ##############
-    # Google API is used to upload files to Google Drive and to use Google Apps Script to generate PDF from Google Sheets
-    GOOGLE_API_CLIENT_ID: str | None = None
-    GOOGLE_API_CLIENT_SECRET: str | None = None
-
-    ##########################
-    # Firebase Configuration #
-    ##########################
-    # To enable Firebase push notification capabilities, a JSON key file named `firebase.json` should be placed at Hyperion root.
-    # This file can be created and downloaded from [Google cloud, IAM and administration, Service account](https://console.cloud.google.com/iam-admin/serviceaccounts) page.
-    USE_FIREBASE: bool = False
-
-    ###########################
-    # HelloAsso configuration #
-    ###########################
-    # To be able to use payment features using HelloAsso, you need to set a client id, secret for their API
-    # HelloAsso provide a sandbox to be able to realize tests
-    # HELLOASSO_API_BASE should have the format: `api.helloasso-sandbox.com`
-    HELLOASSO_API_BASE: str | None = None
-    HELLOASSO_CLIENT_ID: str | None = None
-    HELLOASSO_CLIENT_SECRET: str | None = None
-
-    HELLOASSO_SLUG: str | None = None
-    HELLOASSO_MYECLPAY_SLUG: str | None = None
-
-    CDR_PAYMENT_REDIRECTION_URL: str | None = None
-    RAID_PAYMENT_REDIRECTION_URL: str | None = None
-    MYECLPAY_MAXIMUM_WALLET_BALANCE: int = 1000
-
-    # Drive configuration for the raid registering app
-    RAID_DRIVE_REFRESH_TOKEN: str | None = None
-    RAID_DRIVE_API_KEY: str | None = None
-    RAID_DRIVE_CLIENT_ID: str | None = None
-    RAID_DRIVE_CLIENT_SECRET: str | None = None
-
-    # Trusted urls is a list of redirect payment url that can be trusted by Hyperion.
-    # These urls will be used to validate the redirect url provided by the front
-    TRUSTED_PAYMENT_REDIRECT_URLS: list[str] = []
-
     ############################
     # PostgreSQL configuration #
     ############################
@@ -162,7 +89,6 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 14  # 14 days
     AUTHORIZATION_CODE_EXPIRE_MINUTES: int = 7
-    MYECLPAY_MANAGER_TRANSFER_TOKEN_EXPIRES_MINUTES: int = 20
 
     ###############################################
     # Authorization using OAuth or Openid connect #
@@ -197,7 +123,6 @@ class Settings(BaseSettings):
     # MyECLPay requires an external service to recurrently check for transactions and state integrity, this service needs an access to all the data related to the transactions and the users involved
     # This service will use a special token to access the data
     # If this token is not set, the service will not be able to access the data and no integrity check will be performed
-    MYECLPAY_DATA_VERIFIER_ACCESS_TOKEN: str | None = None
 
     #################################
     # Hardcoded Hyperion parameters #
@@ -205,10 +130,7 @@ class Settings(BaseSettings):
 
     # Hyperion follows Semantic Versioning
     # https://semver.org/
-    HYPERION_VERSION: str = "4.4.1"
-    MINIMAL_TITAN_VERSION_CODE: int = 139
-
-    # Maximum wallet balance for MyECLPay in cents, we will prevent user from adding more money to their wallet if it will make their balance exceed this value
+    RTTRAIL_VERSION: str = "4.4.1"
 
     ######################################
     # Automatically generated parameters #
@@ -217,7 +139,7 @@ class Settings(BaseSettings):
     # If Hyperion should initialize the database on startup
     # This environment variable is set by our init Python file to tell the workers to avoid initializing the database
     # You don't want to set this variable manually
-    HYPERION_INIT_DB: bool = True
+    RTTRAIL_INIT_DB: bool = True
 
     # The following properties can not be instantiated as class variables as them need to be computed using another property from the class,
     # which won't be available before the .env file parsing.
@@ -286,16 +208,6 @@ class Settings(BaseSettings):
     @cached_property
     def OIDC_ISSUER(cls) -> str:
         return cls.CLIENT_URL[:-1]
-
-    @computed_field  # type: ignore[misc]
-    @cached_property
-    def REDIS_URL(cls) -> str | None:
-        if cls.REDIS_HOST:
-            # We need to include `:` before the password
-            return (
-                f"redis://:{cls.REDIS_PASSWORD or ''}@{cls.REDIS_HOST}:{cls.REDIS_PORT}"
-            )
-        return None
 
     #######################################
     #          Fields validation          #
