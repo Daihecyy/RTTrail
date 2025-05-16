@@ -39,6 +39,8 @@ SessionLocal: Callable[[], AsyncSession] | None = (
     None  # Create a global variable for the database session, so that it can be instancied in the startup event
 )
 
+SRID = 3857  #  Represents the Web Mercator projection, widely used in web mapping applications like Google Maps and OpenStreetMap, with units in meters.
+
 
 async def get_request_id(request: Request) -> str:
     """
