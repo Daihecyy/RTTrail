@@ -165,7 +165,7 @@ def use_route_path_as_operation_ids(app: FastAPI) -> None:
 
 def init_db(
     settings: Settings,
-    hyperion_error_logger: logging.Logger,
+    rttrail_error_logger: logging.Logger,
     drop_db: bool = False,
 ) -> None:
     """
@@ -179,7 +179,7 @@ def init_db(
     # Update database tables
     update_db_tables(
         sync_engine=sync_engine,
-        rttrail_error_logger=hyperion_error_logger,
+        rttrail_error_logger=rttrail_error_logger,
         drop_db=drop_db,
     )
     with Session(sync_engine) as db:
@@ -192,9 +192,9 @@ def get_application(settings: Settings, drop_db: bool = False) -> FastAPI:
     # Initialize loggers
     LogConfig().initialize_loggers(settings=settings)
 
-    hyperion_access_logger = logging.getLogger("hyperion.access")
-    hyperion_security_logger = logging.getLogger("hyperion.security")
-    rttrail_error_logger = logging.getLogger("hyperion.error")
+    rttrail_access_logger = logging.getLogger("rttrail.access")
+    rttrail_security_logger = logging.getLogger("rttrail.security")
+    rttrail_error_logger = logging.getLogger("rttrail.error")
 
     # Create folder for calendars if they don't already exists
     Path("data/ics/").mkdir(parents=True, exist_ok=True)
@@ -209,7 +209,7 @@ def get_application(settings: Settings, drop_db: bool = False) -> FastAPI:
 
     # Initialize app
     app = FastAPI(
-        title="Hyperion",
+        title="rttrail",
         version=settings.RTTRAIL_VERSION,
         lifespan=lifespan,
     )
@@ -227,7 +227,7 @@ def get_application(settings: Settings, drop_db: bool = False) -> FastAPI:
     if settings.RTTRAIL_INIT_DB:
         init_db(
             settings=settings,
-            hyperion_error_logger=rttrail_error_logger,
+            rttrail_error_logger=rttrail_error_logger,
             drop_db=drop_db,
         )
     else:
@@ -256,7 +256,7 @@ def get_application(settings: Settings, drop_db: bool = False) -> FastAPI:
 
         # This should never happen, but we log it just in case
         if request.client is None:
-            hyperion_security_logger.warning(
+            rttrail_security_logger.warning(
                 f"Client information not available for {request.url.path}",
             )
             raise HTTPException(status_code=400, detail="No client information")
@@ -269,7 +269,7 @@ def get_application(settings: Settings, drop_db: bool = False) -> FastAPI:
         if process:
             response = await call_next(request)
 
-            hyperion_access_logger.info(
+            rttrail_access_logger.info(
                 f'{client_address} - "{request.method} {request.url.path}" {response.status_code} ({request_id})',
             )
         else:

@@ -12,7 +12,7 @@ from app.core.utils import security
 from app.core.utils.config import Settings
 from app.types.scopes_type import ScopeType
 
-hyperion_access_logger = logging.getLogger("hyperion.access")
+rttrail_access_logger = logging.getLogger("rttrail.access")
 
 
 def get_token_data(
@@ -30,11 +30,11 @@ def get_token_data(
             algorithms=[security.jwt_algorithm],
         )
         token_data = schemas_auth.TokenData(**payload)
-        hyperion_access_logger.info(
+        rttrail_access_logger.info(
             f"Get_token_data: Decoded a token for user {token_data.sub} ({request_id})",
         )
     except ExpiredSignatureError:
-        hyperion_access_logger.exception(
+        rttrail_access_logger.exception(
             f"Get_token_data: Token has expired ({request_id})",
         )
         raise HTTPException(
@@ -42,7 +42,7 @@ def get_token_data(
             detail="Token has expired",
         ) from None
     except DecodeError:
-        hyperion_access_logger.exception(
+        rttrail_access_logger.exception(
             f"Get_token_data: Failed to decode a token ({request_id})",
         )
         raise HTTPException(
@@ -50,7 +50,7 @@ def get_token_data(
             detail="Could not validate credentials",
         ) from None
     except (InvalidTokenError, ValidationError):
-        hyperion_access_logger.exception(
+        rttrail_access_logger.exception(
             f"Get_token_data: Failed to decode a token ({request_id})",
         )
         raise HTTPException(

@@ -8,7 +8,7 @@ from uuid import UUID
 if TYPE_CHECKING:
     from app.core.utils.config import Settings
 
-hyperion_error_logger = logging.getLogger("hyperion.error")
+rttrail_error_logger = logging.getLogger("rttrail.error")
 
 
 def send_email(

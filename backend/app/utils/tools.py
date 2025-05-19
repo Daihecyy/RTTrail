@@ -30,8 +30,8 @@ if TYPE_CHECKING:
     from app.core.utils.config import Settings
 
 
-hyperion_error_logger = logging.getLogger("hyperion.error")
-hyperion_security_logger = logging.getLogger("hyperion.security")
+rttrail_error_logger = logging.getLogger("rttrail.error")
+rttrail_security_logger = logging.getLogger("rttrail.security")
 
 
 templates = Jinja2Templates(directory="assets/templates")
@@ -116,7 +116,7 @@ async def save_file_as_data(
         ]
 
     if not uuid_regex.match(filename):
-        hyperion_error_logger.error(
+        rttrail_error_logger.error(
             f"save_file_as_data: security issue, the filename is not a valid UUID: {filename}.",
         )
         raise FileNameIsNotAnUUIDError()
@@ -158,7 +158,7 @@ async def save_file_as_data(
                 await buffer.write(content)
 
     except Exception:
-        hyperion_error_logger.exception(
+        rttrail_error_logger.exception(
             f"save_file_to_the_disk: could not save file to {filename} ({request_id})",
         )
         raise HTTPException(status_code=400, detail="Could not save file")
@@ -185,7 +185,7 @@ async def save_bytes_as_data(
     """
 
     if not uuid_regex.match(filename):
-        hyperion_error_logger.error(
+        rttrail_error_logger.error(
             f"save_file_as_data: security issue, the filename is not a valid UUID: {filename}.",
         )
         raise FileNameIsNotAnUUIDError()
@@ -204,7 +204,7 @@ async def save_bytes_as_data(
             await buffer.write(file_bytes)
 
     except Exception:
-        hyperion_error_logger.exception(
+        rttrail_error_logger.exception(
             f"save_file_to_the_disk: could not save file to {filename} ({request_id})",
         )
         raise HTTPException(status_code=400, detail="Could not save file")
@@ -225,7 +225,7 @@ def get_file_path_from_data(
     WARNING: **NEVER** trust user input when calling this function. Always check that parameters are valid.
     """
     if not uuid_regex.match(filename):
-        hyperion_error_logger.error(
+        rttrail_error_logger.error(
             f"get_file_from_data: security issue, the filename is not a valid UUID: {filename}. This mean that the user input was not properly checked.",
         )
         raise FileNameIsNotAnUUIDError()
@@ -268,7 +268,7 @@ def delete_file_from_data(
     WARNING: **NEVER** trust user input when calling this function. Always check that parameters are valid.
     """
     if not uuid_regex.match(filename):
-        hyperion_error_logger.error(
+        rttrail_error_logger.error(
             f"get_file_from_data: security issue, the filename is not a valid UUID: {filename}. This mean that the user input was not properly checked.",
         )
         raise FileNameIsNotAnUUIDError()
@@ -397,7 +397,7 @@ async def create_and_send_email_migration(
             settings=settings,
         )
     else:
-        hyperion_security_logger.info(
+        rttrail_security_logger.info(
             f"You can confirm your new email address by clicking the following link: {settings.CLIENT_URL}users/migrate-mail-confirm?token={confirmation_token}",
         )
 
