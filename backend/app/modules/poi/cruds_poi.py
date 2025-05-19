@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from uuid import UUID
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
@@ -27,6 +28,14 @@ async def get_poi_by_id(db: AsyncSession, poi_id: UUID) -> models_poi.POI | None
         ),
     )
     return poi.unique().scalars().first()
+
+
+async def get_pois_in_box(
+    db: AsyncSession, box_definition: str
+) -> Sequence[models_poi.POI]:
+    """Return POIs inside the box"""
+    pois = await db.execute(select(models_poi.POI).filter(func.st_intersects))
+    return pois.scalars().all()
 
 
 async def update_poi_by_id(

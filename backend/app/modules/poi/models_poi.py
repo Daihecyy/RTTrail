@@ -8,7 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.users.models_users import User
 from app.types.sqlalchemy import Base, PrimaryKey
 from app.dependencies import SRID
-from app.modules.poi.types_poi import VoteValue
+from app.modules.poi.types_poi import POIType, VoteValue
 
 
 class POI(Base):
@@ -19,8 +19,9 @@ class POI(Base):
     user: Mapped[User] = relationship("User", init=False)
     creation_time: Mapped[datetime]
     title: Mapped[str]
+    type: Mapped[POIType]
     image_url: Mapped[str]
-    mapped_geom: Mapped[WKBElement] = mapped_column(
+    location: Mapped[WKBElement] = mapped_column(
         Geometry(geometry_type="POINT", srid=SRID)
     )
     description: Mapped[str]
