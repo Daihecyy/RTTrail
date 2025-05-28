@@ -4,14 +4,14 @@ import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
 import { type SubmitHandler, useForm } from "react-hook-form"
 import { FiLock } from "react-icons/fi"
 
-import { type ApiError, LoginService, type NewPassword } from "@/client"
+import { type ApiError, type ResetPassword, AuthService } from "@/client"
 import { Button } from "@/components/ui/button"
 import { PasswordInput } from "@/components/ui/password-input"
 import { isLoggedIn } from "@/hooks/useAuth"
 import useCustomToast from "@/hooks/useCustomToast"
 import { confirmPasswordRules, handleError, passwordRules } from "@/utils"
 
-interface NewPasswordForm extends NewPassword {
+interface NewPasswordForm extends ResetPassword {
   confirm_password: string
 }
 
@@ -43,11 +43,11 @@ function ResetPassword() {
   const { showSuccessToast } = useCustomToast()
   const navigate = useNavigate()
 
-  const resetPassword = async (data: NewPassword) => {
+  const resetPassword = async (data: ResetPassword) => {
     const token = new URLSearchParams(window.location.search).get("token")
     if (!token) return
-    await LoginService.resetPassword({
-      requestBody: { new_password: data.new_password, token: token },
+    await AuthService.postLoginResetPassword({
+      requestBody: { new_password: data.new_password, reset_token: token },
     })
   }
 

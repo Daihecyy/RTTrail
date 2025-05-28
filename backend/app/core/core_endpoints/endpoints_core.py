@@ -15,7 +15,6 @@ from app.types.module import CoreModule
 router = APIRouter(tags=["Core"])
 
 core_module = CoreModule(
-    root="",
     tag="Core",
     router=router,
 )

@@ -43,7 +43,6 @@ function SignUp() {
     criteriaMode: "all",
     defaultValues: {
       email: "",
-      full_name: "",
       password: "",
       confirm_password: "",
     },
@@ -74,23 +73,6 @@ function SignUp() {
             alignSelf="center"
             mb={4}
           />
-          <Field
-            invalid={!!errors.full_name}
-            errorText={errors.full_name?.message}
-          >
-            <InputGroup w="100%" startElement={<FiUser />}>
-              <Input
-                id="full_name"
-                minLength={3}
-                {...register("full_name", {
-                  required: "Full Name is required",
-                })}
-                placeholder="Full Name"
-                type="text"
-              />
-            </InputGroup>
-          </Field>
-
           <Field invalid={!!errors.email} errorText={errors.email?.message}>
             <InputGroup w="100%" startElement={<FiUser />}>
               <Input

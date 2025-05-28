@@ -30,7 +30,7 @@ def init_superadmin(db: Session) -> models_users.User | None:
     if user is None:
         user = models_users.User(
             name="Super admin",
-            id=str(uuid.uuid4()),
+            id=uuid.uuid4(),
             email=settings.FIRST_SUPERUSER,
             password_hash=get_password_hash(settings.FIRST_SUPERUSER_PASSWORD),
             account_type=AccountType.admin,

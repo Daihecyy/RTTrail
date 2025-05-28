@@ -5,6 +5,32 @@ from datetime import datetime
 from fastapi import Form
 from pydantic import BaseModel, field_validator
 
+from app.utils import validators
+
+
+class ChangePassword(BaseModel):
+    email: str
+    old_password: str
+    new_password: str
+
+    # Password validator
+    # https://pydantic-docs.helpmanual.io/usage/validators/#reuse-validators
+    _normalize_password = field_validator("new_password")(validators.password_validator)
+
+
+class ResetPassword(BaseModel):
+    reset_token: str
+    new_password: str
+
+    # Password validator
+    # https://pydantic-docs.helpmanual.io/usage/validators/#reuse-validators
+    _normalize_password = field_validator("new_password")(validators.password_validator)
+
+
+class MailMigration(BaseModel):
+    new_email: str
+
+
 class AccessToken(BaseModel):
     access_token: str
     token_type: str

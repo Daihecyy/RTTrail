@@ -7,7 +7,7 @@ import jwt
 from fastapi.security import OAuth2AuthorizationCodeBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import schemas_auth
+from app.core.login import schemas_login
 from app.core.users import cruds_users, models_users
 
 if TYPE_CHECKING:
@@ -100,7 +100,7 @@ async def authenticate_user(
 
 def create_access_token(
     settings: "Settings",
-    data: schemas_auth.TokenData,
+    data: schemas_login.TokenData,
     expires_delta: timedelta | None = None,
 ) -> str:
     """
@@ -123,7 +123,7 @@ def create_access_token(
 
 def create_access_token_RS256(
     settings: "Settings",
-    data: schemas_auth.TokenData,
+    data: schemas_login.TokenData,
     additional_data: dict[str, Any] | None = None,
     expires_delta: timedelta | None = None,
 ) -> str:

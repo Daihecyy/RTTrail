@@ -6,16 +6,13 @@ from app.core.users.type_users import AccountType
 class CoreModule:
     def __init__(
         self,
-        root: str,
         tag: str,
         router: APIRouter | None = None,
     ):
         """
         Initialize a new Module object.
-        :param root: the root of the module, used by Titan
         :param router: an optional custom APIRouter
         """
-        self.root = root
         self.router = router or APIRouter(tags=[tag])
 
 

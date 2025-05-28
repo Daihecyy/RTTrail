@@ -1,6 +1,7 @@
 """File defining the functions called by the endpoints, making queries to the table using the models"""
 
 from collections.abc import Sequence
+from uuid import UUID
 
 from sqlalchemy import and_, delete, not_, or_, select, update
 from sqlalchemy.exc import IntegrityError
@@ -62,7 +63,7 @@ async def get_users(
 
 async def get_user_by_id(
     db: AsyncSession,
-    user_id: str,
+    user_id: UUID,
 ) -> models_users.User | None:
     """Return user with id from database as a dictionary"""
 
@@ -86,7 +87,7 @@ async def get_user_by_email(
 
 async def update_user(
     db: AsyncSession,
-    user_id: str,
+    user_id: UUID,
     user_update: schemas_users.UserUpdateAdmin | schemas_users.UserUpdate,
 ):
     await db.execute(
@@ -239,7 +240,7 @@ async def delete_recover_request_by_email(db: AsyncSession, email: str):
 
 async def update_user_password_by_id(
     db: AsyncSession,
-    user_id: str,
+    user_id: UUID,
     new_password_hash: str,
 ):
     await db.execute(

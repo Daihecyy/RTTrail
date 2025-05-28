@@ -20,7 +20,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-from app.core.auth import schemas_auth
+from app.core.login import schemas_login
 from app.core.users.type_users import AccountType
 from app.core.users import models_users
 from app.core.utils import security
@@ -89,22 +89,6 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             await db.close()
 
 
-async def get_unsafe_db() -> AsyncGenerator[AsyncSession, None]:
-    """
-    Return a database session but don't close it automatically
-
-    It should only be used for really specific cases where `get_db` will not work
-    """
-    if SessionLocal is None:
-        rttrail_error_logger.error("Database engine is not initialized")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Database engine is not initialized",
-        )
-    async with SessionLocal() as db:
-        yield db
-
-
 @lru_cache
 def get_settings() -> Settings:
     """
@@ -119,7 +103,7 @@ def get_token_data(
     settings: Settings = Depends(get_settings),
     token: str = Depends(security.oauth2_scheme),
     request_id: str = Depends(get_request_id),
-) -> schemas_auth.TokenData:
+) -> schemas_login.TokenData:
     """
     Dependency that returns the token payload data
     """
@@ -133,7 +117,7 @@ def get_token_data(
 def get_user_from_token_with_scopes(
     scopes: list[list[ScopeType]],
 ) -> Callable[
-    [AsyncSession, schemas_auth.TokenData],
+    [AsyncSession, schemas_login.TokenData],
     Coroutine[Any, Any, models_users.User],
 ]:
     """
@@ -148,7 +132,7 @@ def get_user_from_token_with_scopes(
 
     async def get_current_user(
         db: AsyncSession = Depends(get_db),
-        token_data: schemas_auth.TokenData = Depends(get_token_data),
+        token_data: schemas_login.TokenData = Depends(get_token_data),
     ) -> models_users.User:
         """
         Dependency that makes sure the token is valid, contains the expected scopes and returns the corresponding user.

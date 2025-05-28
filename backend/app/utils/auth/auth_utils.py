@@ -6,7 +6,7 @@ from jwt.exceptions import DecodeError, ExpiredSignatureError, InvalidTokenError
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import schemas_auth
+from app.core.login import schemas_login
 from app.core.users import cruds_users, models_users
 from app.core.utils import security
 from app.core.utils.config import Settings
@@ -19,7 +19,7 @@ def get_token_data(
     settings: Settings,
     token: str,
     request_id: str,
-) -> schemas_auth.TokenData:
+) -> schemas_login.TokenData:
     """
     Dependency that returns the token payload data
     """
@@ -29,7 +29,7 @@ def get_token_data(
             settings.SECRET_KEY,
             algorithms=[security.jwt_algorithm],
         )
-        token_data = schemas_auth.TokenData(**payload)
+        token_data = schemas_login.TokenData(**payload)
         rttrail_access_logger.info(
             f"Get_token_data: Decoded a token for user {token_data.sub} ({request_id})",
         )
@@ -64,7 +64,7 @@ def get_token_data(
 async def get_user_from_token_with_scopes(
     scopes: list[list[ScopeType]],
     db: AsyncSession,
-    token_data: schemas_auth.TokenData,
+    token_data: schemas_login.TokenData,
 ) -> models_users.User:
     """
     Dependency that makes sure the token is valid, contains the expected scopes and returns the corresponding user.

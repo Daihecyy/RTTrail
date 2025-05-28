@@ -1,9 +1,10 @@
 from datetime import datetime
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
 from app.utils import validators
-from app.utils.examples import examples_core
+from app.utils.examples import examples_users
 
 from app.core.users.type_users import AccountType
 
@@ -19,7 +20,7 @@ class UserBase(BaseModel):
 class UserSimple(UserBase):
     """Simplified schema for user's model, used when getting all users"""
 
-    id: str
+    id: UUID
     account_type: AccountType
     is_active: bool
 
@@ -39,7 +40,7 @@ class UserUpdate(BaseModel):
     name: str | None = None
 
     _normalize_name = field_validator("name")(validators.trailing_spaces_remover)
-    model_config = ConfigDict(json_schema_extra=examples_core.example_CoreUserUpdate)
+    model_config = ConfigDict(json_schema_extra=examples_users.example_UserUpdate)
 
 
 class UserUpdateAdmin(BaseModel):
@@ -49,68 +50,47 @@ class UserUpdateAdmin(BaseModel):
     is_active: bool | None = None
 
     _normalize_name = field_validator("name")(validators.trailing_spaces_remover)
-    model_config = ConfigDict(json_schema_extra=examples_core.example_CoreUserUpdate)
+    model_config = ConfigDict(json_schema_extra=examples_users.example_UserUpdate)
 
 
-class UserCreateRequest(BaseModel):
+class UserRegister(BaseModel):
     """
     The schema is used to send an account creation request.
     """
 
     email: str
+    password: str
+    name: str
     # Email normalization, this will modify the email variable
     # https://pydantic-docs.helpmanual.io/usage/validators/#reuse-validators
     _normalize_email = field_validator("email")(validators.email_normalizer)
+    _normalize_password = field_validator("password")(validators.password_validator)
+    _normalize_name = field_validator("name")(validators.trailing_spaces_remover)
     model_config = ConfigDict(
         from_attributes=True,
-        json_schema_extra=examples_core.example_CoreUserCreateRequest,
+        json_schema_extra=examples_users.example_CoreUserCreateRequest,
     )
 
 
-class UserActivateRequest(UserBase):
+class UserActivate(UserBase):
     activation_token: str
-    password: str
     # Password validator
     # https://pydantic-docs.helpmanual.io/usage/validators/#reuse-validators
-    _normalize_password = field_validator("password")(validators.password_validator)
     model_config = ConfigDict(
         from_attributes=True,
-        json_schema_extra=examples_core.example_CoreUserActivateRequest,
+        json_schema_extra=examples_users.example_CoreUserActivateRequest,
     )
 
 
 class UserRecoverRequest(BaseModel):
     email: str
-    user_id: str
+    user_id: UUID
     reset_token: str
     created_on: datetime
     expire_on: datetime
 
     _normalize_email = field_validator("email")(validators.email_normalizer)
     model_config = ConfigDict(from_attributes=True)
-
-
-class ChangePasswordRequest(BaseModel):
-    email: str
-    old_password: str
-    new_password: str
-
-    # Password validator
-    # https://pydantic-docs.helpmanual.io/usage/validators/#reuse-validators
-    _normalize_password = field_validator("new_password")(validators.password_validator)
-
-
-class ResetPasswordRequest(BaseModel):
-    reset_token: str
-    new_password: str
-
-    # Password validator
-    # https://pydantic-docs.helpmanual.io/usage/validators/#reuse-validators
-    _normalize_password = field_validator("new_password")(validators.password_validator)
-
-
-class MailMigrationRequest(BaseModel):
-    new_email: str
 
 
 # Importing here to avoid circular imports

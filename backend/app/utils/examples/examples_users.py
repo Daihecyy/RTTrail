@@ -1,12 +1,10 @@
 from pydantic.config import JsonDict
 
-example_CoreUserUpdate: JsonDict = {
-    "name": "Backend",
-    "firstname": "MyECL",
-    "nickname": "Hyperion",
-    "birthday": "2022-05-04",
-    "promo": 2021,
-    "floor": "Adoma",
+example_UserUpdate: JsonDict = {
+    "name": "Jean",
+    "account_type": "moderator",
+    "is_active": True,
+    "email": "newmail@example.com",
 }
 
 example_CoreUserCreateRequest: JsonDict = {
