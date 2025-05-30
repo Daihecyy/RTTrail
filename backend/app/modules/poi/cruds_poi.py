@@ -4,8 +4,8 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.modules.poi import models_poi
-from backend.app.modules.poi.types_poi import VoteValue
+from app.modules.poi import models_poi, schemas_poi
+from app.modules.poi.types_poi import VoteValue
 
 
 async def create_poi(db: AsyncSession, poi: models_poi.POI) -> models_poi.POI:
