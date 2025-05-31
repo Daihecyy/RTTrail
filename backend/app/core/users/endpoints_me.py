@@ -102,7 +102,7 @@ async def update_current_user(
 
 
 @router.post(
-    "users/me/profile-picture",
+    "/users/me/profile-picture",
     response_model=standard_responses.Result,
     status_code=201,
 )
@@ -134,7 +134,7 @@ async def create_current_user_profile_picture(
 
 
 @router.get(
-    "users/me/profile-picture",
+    "/users/me/profile-picture",
     response_class=FileResponse,
     status_code=200,
 )

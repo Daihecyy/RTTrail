@@ -368,7 +368,7 @@ async def activate_user(
 )
 async def recover_user(
     # We use embed for email parameter: https://fastapi.tiangolo.com/tutorial/body-multiple-params/#embed-a-single-body-parameter
-    email: str = Body(..., embed=True),
+    email_recover: schemas_login.EmailRecover,
     db: AsyncSession = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ):
@@ -378,6 +378,7 @@ async def recover_user(
     If the provided **email** corresponds to an existing account, a password reset token will be sent.
     Using this token, the password can be changed with `/users/reset-password` endpoint
     """
+    email = email_recover.email
 
     db_user = await cruds_users.get_user_by_email(db=db, email=email)
     if db_user is None:

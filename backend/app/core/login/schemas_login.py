@@ -8,6 +8,10 @@ from pydantic import BaseModel, field_validator
 from app.utils import validators
 
 
+class EmailRecover(BaseModel):
+    email: str
+
+
 class ChangePassword(BaseModel):
     email: str
     old_password: str
