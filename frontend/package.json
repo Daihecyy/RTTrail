@@ -4,27 +4,33 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "vinxi dev",
+    "build": "vinxi build",
+    "start": "vinxi start",
     "lint": "eslint .",
     "preview": "vite preview",
-    "generate-api": "npx @openapitools/openapi-generator-cli generate -i http://localhost:8000/openapi.json -g typescript-axios -o ./src/api && biome format ./src/api"
+    "generate-api": "npx @openapitools/openapi-generator-cli generate -i http://localhost:8000/openapi.json -g typescript-axios -o ./app/api && biome format ./app/api"
   },
   "dependencies": {
+    "@tanstack/react-router": "^1.120.13",
+    "@tanstack/react-start": "^1.120.13",
     "axios": "^1.9.0",
     "biome": "^0.2.2",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "vinxi": "^0.5.6"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
-    "@types/react": "^19.1.2",
-    "@types/react-dom": "^19.1.2",
-    "@vitejs/plugin-react": "^4.4.1",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.5",
+    "@vitejs/plugin-react": "^4.5.0",
     "eslint": "^9.25.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
-    "vite": "^6.3.5"
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vite-tsconfig-paths": "^5.1.4"
   }
 }
