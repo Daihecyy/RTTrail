@@ -4,7 +4,7 @@ import { useState } from "react"
 import { FaBars } from "react-icons/fa"
 import { FiLogOut } from "react-icons/fi"
 
-import type { UserPublic } from "@/client"
+import type { User } from "@/client"
 import useAuth from "@/hooks/useAuth"
 import {
   DrawerBackdrop,
@@ -18,7 +18,7 @@ import SidebarItems from "./SidebarItems"
 
 const Sidebar = () => {
   const queryClient = useQueryClient()
-  const currentUser = queryClient.getQueryData<UserPublic>(["currentUser"])
+  const currentUser = queryClient.getQueryData<User>(["currentUser"])
   const { logout } = useAuth()
   const [open, setOpen] = useState(false)
 

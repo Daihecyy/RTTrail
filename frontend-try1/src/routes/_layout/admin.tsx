@@ -4,7 +4,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { z } from "zod"
 
 import { type UserPublic, UsersService } from "@/client"
-import AddUser from "@/components/Admin/AddUser"
+// import AddUser from "@/components/Admin/AddUser"
 import { UserActionsMenu } from "@/components/Common/UserActionsMenu"
 import PendingUsers from "@/components/Pending/PendingUsers"
 import {
@@ -23,7 +23,7 @@ const PER_PAGE = 5
 function getUsersQueryOptions({ page }: { page: number }) {
   return {
     queryFn: () =>
-      UsersService.readUsers({ skip: (page - 1) * PER_PAGE, limit: PER_PAGE }),
+      UsersService.getUsers({ skip: (page - 1) * PER_PAGE, limit: PER_PAGE }),
     queryKey: ["users", { page }],
   }
 }
@@ -35,7 +35,7 @@ export const Route = createFileRoute("/_layout/admin")({
 
 function UsersTable() {
   const queryClient = useQueryClient()
-  const currentUser = queryClient.getQueryData<UserPublic>(["currentUser"])
+  const currentUser = queryClient.getQueryData<User>(["currentUser"])
   const navigate = useNavigate({ from: Route.fullPath })
   const { page } = Route.useSearch()
 
