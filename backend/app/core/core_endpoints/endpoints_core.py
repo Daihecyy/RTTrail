@@ -22,11 +22,11 @@ core_module = CoreModule(
 rttrail_error_logger = logging.getLogger("rttrail.error")
 
 
-@router.get(
-    "/information",
-    response_model=schemas_core.CoreInformation,
-    status_code=200,
-)
+# @router.get(
+#     "/information",
+#     response_model=schemas_core.CoreInformation,
+#     status_code=200,
+# )
 async def read_information(
     settings: Settings = Depends(get_settings),
 ):
@@ -40,11 +40,11 @@ async def read_information(
     )
 
 
-@router.get(
-    "/privacy",
-    response_class=FileResponse,
-    status_code=200,
-)
+# @router.get(
+#     "/privacy",
+#     response_class=FileResponse,
+#     status_code=200,
+# )
 async def read_privacy():
     """
     Return RTTrail privacy
@@ -53,11 +53,11 @@ async def read_privacy():
     return FileResponse("assets/privacy.txt")
 
 
-@router.get(
-    "/terms-and-conditions",
-    response_class=FileResponse,
-    status_code=200,
-)
+# @router.get(
+#     "/terms-and-conditions",
+#     response_class=FileResponse,
+#     status_code=200,
+# )
 async def read_terms_and_conditions():
     """
     Return RTTrail terms and conditions pages
@@ -66,11 +66,11 @@ async def read_terms_and_conditions():
     return FileResponse("assets/terms-and-conditions.txt")
 
 
-@router.get(
-    "/support",
-    response_class=FileResponse,
-    status_code=200,
-)
+# @router.get(
+#     "/support",
+#     response_class=FileResponse,
+#     status_code=200,
+# )
 async def read_support():
     """
     Return RTTrail terms and conditions pages
@@ -79,11 +79,11 @@ async def read_support():
     return FileResponse("assets/support.txt")
 
 
-@router.get(
-    "/security.txt",
-    response_class=FileResponse,
-    status_code=200,
-)
+# @router.get(
+#     "/security.txt",
+#     response_class=FileResponse,
+#     status_code=200,
+# )
 async def read_security_txt():
     """
     Return RTTrail security.txt file
@@ -92,11 +92,11 @@ async def read_security_txt():
     return FileResponse("assets/security.txt")
 
 
-@router.get(
-    "/.well-known/security.txt",
-    response_class=FileResponse,
-    status_code=200,
-)
+# @router.get(
+#     "/.well-known/security.txt",
+#     response_class=FileResponse,
+#     status_code=200,
+# )
 async def read_wellknown_security_txt():
     """
     Return RTTrail security.txt file
@@ -105,11 +105,11 @@ async def read_wellknown_security_txt():
     return FileResponse("assets/security.txt")
 
 
-@router.get(
-    "/robots.txt",
-    response_class=FileResponse,
-    status_code=200,
-)
+# @router.get(
+#     "/robots.txt",
+#     response_class=FileResponse,
+#     status_code=200,
+# )
 async def read_robots_txt():
     """
     Return RTTrail robots.txt file
@@ -118,11 +118,11 @@ async def read_robots_txt():
     return FileResponse("assets/robots.txt")
 
 
-@router.get(
-    "/style/{file}.css",
-    response_class=FileResponse,
-    status_code=200,
-)
+# @router.get(
+#     "/style/{file}.css",
+#     response_class=FileResponse,
+#     status_code=200,
+# )
 async def get_style_file(
     file: str,
 ):

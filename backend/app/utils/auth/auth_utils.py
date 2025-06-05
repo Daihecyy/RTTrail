@@ -1,4 +1,5 @@
 import logging
+import uuid
 
 import jwt
 from fastapi import HTTPException, status
@@ -92,7 +93,7 @@ async def get_user_from_token_with_scopes(
             status_code=403,
             detail=f"Unauthorized, token does not contain at least one of the following scope_set {[[scope.value for scope in scope_set] for scope_set in scopes]}",
         )
-    user_id = token_data.sub
+    user_id = uuid.UUID(token_data.sub)
 
     user = await cruds_users.get_user_by_id(db=db, user_id=user_id)
     if not user:

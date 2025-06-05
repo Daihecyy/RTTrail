@@ -1,14 +1,17 @@
 import secrets
 from datetime import UTC, datetime, timedelta
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import bcrypt
+from fastapi import HTTPException, Request, status
 import jwt
-from fastapi.security import OAuth2AuthorizationCodeBearer
+from fastapi.security import OAuth2, OAuth2AuthorizationCodeBearer
+from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.login import schemas_login
 from app.core.users import cruds_users, models_users
+from fastapi.security.utils import get_authorization_scheme_param
 
 if TYPE_CHECKING:
     from app.core.utils.config import Settings
@@ -21,9 +24,44 @@ A different salt will be added automatically for each password. See [Auth0 Under
 It is important to use enough rounds while accounting for the hash computation time. Default is 12. 13 allows for a 0.5 seconds computing delay.
 """
 
-oauth2_scheme = OAuth2AuthorizationCodeBearer(
-    authorizationUrl="/auth/authorize",
-    tokenUrl="/auth/token",
+
+class OAuth2PasswordBearerWithCookie(OAuth2):
+    def __init__(
+        self,
+        tokenUrl: str,
+        scheme_name: Optional[str] = None,
+        scopes: Optional[Dict[str, str]] = None,
+        auto_error: bool = True,
+    ):
+        if not scopes:
+            scopes = {}
+        flows = OAuthFlowsModel(password={"tokenUrl": tokenUrl, "scopes": scopes})
+        super().__init__(flows=flows, scheme_name=scheme_name, auto_error=auto_error)
+
+    async def __call__(self, request: Request) -> Optional[str]:
+        authorization: str | None = request.cookies.get("access_token")
+
+        scheme, param = get_authorization_scheme_param(authorization)
+        if not authorization or scheme.lower() != "bearer":
+            if self.auto_error:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Not authenticated",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+            else:
+                return None
+        return param
+
+
+# oauth2_scheme = OAuth2AuthorizationCodeBearer(
+#     authorizationUrl="/auth/authorize",
+#     tokenUrl="/auth/token",
+#     scheme_name="AuthorizationCodeAuthentication",
+#     scopes={"API": "Access Hyperion endpoints"},
+# )
+oauth2_scheme = OAuth2PasswordBearerWithCookie(
+    tokenUrl="/login/access-token",
     scheme_name="AuthorizationCodeAuthentication",
     scopes={"API": "Access Hyperion endpoints"},
 )

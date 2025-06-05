@@ -4,6 +4,7 @@ from fastapi import (
     APIRouter,
     Depends,
     HTTPException,
+    Response,
 )
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.templating import Jinja2Templates
@@ -12,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.login import schemas_login
 from app.core.utils.config import Settings
 from app.core.utils.security import (
+    OAuth2PasswordBearerWithCookie,
     authenticate_user,
     create_access_token,
 )
@@ -63,6 +65,7 @@ rttrail_security_logger = logging.getLogger("rttrail.security")
     status_code=200,
 )
 async def login_for_access_token(
+    response: Response,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db),
     settings: Settings = Depends(get_settings),
@@ -85,13 +88,16 @@ async def login_for_access_token(
         raise HTTPException(status_code=400, detail="Inactive user")
     # We put the user id in the subject field of the token.
     # The subject `sub` is a JWT registered claim name, see https://datatracker.ietf.org/doc/html/rfc7519#section-4.1
-    data = schemas_login.TokenData(sub=str(user.id), scopes=ScopeType.auth)
+    data = schemas_login.TokenData(sub=str(user.id), scopes=ScopeType.API)
     access_token = create_access_token(settings=settings, data=data)
+    response.set_cookie(
+        key="access_token", value=f"Bearer {access_token}", httponly=True
+    )
     return {"access_token": access_token, "token_type": "bearer"}
 
 
 @router.post("/login/test-token", response_model=schemas_users.User)
-def test_token(current_user: models_users.User = Depends(is_user)):
+def test_token(current_user: models_users.User = Depends(is_user())):
     """
     Test access token
     """

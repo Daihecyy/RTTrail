@@ -1,5 +1,6 @@
 from datetime import datetime
-from uuid import UUID
+import uuid
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
@@ -11,10 +12,11 @@ from app.types.sqlalchemy import Base
 class User(Base):
     __tablename__ = "user"
 
-    id: Mapped[UUID] = mapped_column(
+    id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
         primary_key=True,
         index=True,
-    )  # Use UUID later
+    )
     email: Mapped[str] = mapped_column(unique=True, index=True)
     password_hash: Mapped[str]
     is_active: Mapped[bool]
@@ -26,7 +28,11 @@ class User(Base):
 class UserUnconfirmed(Base):
     __tablename__ = "user_unconfirmed"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True)
+    id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        primary_key=True,
+        index=True,
+    )
     # The email column should not be unique.
     # Someone can indeed create more than one user creation request,
     # for example after losing the previously received confirmation email.
@@ -44,7 +50,7 @@ class UserRecoverRequest(Base):
     # The email column should not be unique.
     # Someone can indeed create more than one password reset request,
     email: Mapped[str]
-    user_id: Mapped[UUID]
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id"), primary_key=True)
     reset_token: Mapped[str] = mapped_column(primary_key=True)
     created_on: Mapped[datetime]
     expire_on: Mapped[datetime]
@@ -53,9 +59,9 @@ class UserRecoverRequest(Base):
 class UserEmailMigrationCode(Base):
     __tablename__ = "user_email_migration_code"
 
-    user_id: Mapped[UUID] = mapped_column(ForeignKey("user.id"), primary_key=True)
     new_email: Mapped[str]
     old_email: Mapped[str]
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id"), primary_key=True)
 
     confirmation_token: Mapped[str] = mapped_column(
         String,

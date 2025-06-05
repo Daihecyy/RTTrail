@@ -8,6 +8,7 @@ from collections.abc import Callable, Sequence
 from inspect import iscoroutinefunction
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeVar
+from uuid import UUID
 
 import aiofiles
 from fastapi import HTTPException, UploadFile
@@ -72,7 +73,7 @@ def sort_user(
     return [user for user, _ in reversed(scored)]
 
 
-async def is_user_id_valid(user_id: str, db: AsyncSession) -> bool:
+async def is_user_id_valid(user_id: UUID, db: AsyncSession) -> bool:
     """
     Test if the provided user_id is a valid user.
     """
@@ -356,7 +357,7 @@ async def set_core_data(
 
 
 async def create_and_send_email_migration(
-    user_id: str,
+    user_id: UUID,
     new_email: str,
     old_email: str,
     db: AsyncSession,
